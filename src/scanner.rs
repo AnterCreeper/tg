@@ -79,12 +79,12 @@ fn find_telegram_pid() -> Result<i32, String> {
     let process = dictionary::desktop_app_process();
     let output = Command::new("pgrep")
         .arg("-x")
-        .arg(process)
+        .arg(&process)
         .output()
         .map_err(|e| format!("Failed to run pgrep: {}", e))?;
 
     if !output.status.success() {
-        return Err("Telegram is not running.".to_string());
+        return Err(format!("{} is not running.", process));
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);

@@ -13,8 +13,14 @@ fn decode_bytes(encoded: &[u8]) -> Vec<u8> {
     encoded.iter().map(|byte| byte ^ MASK).collect()
 }
 
+#[cfg(target_os = "macos")]
 pub(crate) fn desktop_app_process() -> String {
     decode(&[13, 63, 25, 50, 59, 46])
+}
+
+#[cfg(target_os = "linux")]
+pub(crate) fn desktop_app_process() -> String {
+    decode(&[45, 63, 57, 50, 59, 46])
 }
 
 pub(crate) fn desktop_app_name() -> String {
