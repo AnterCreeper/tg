@@ -13,6 +13,11 @@ unsafe extern "C" {
     fn tg_scan_keys_macos(argc: c_int, argv: *const *const c_char) -> c_int;
 }
 
+#[cfg(target_os = "linux")]
+unsafe extern "C" {
+    fn tg_scan_keys_linux(argc: c_int, argv: *const *const c_char) -> c_int;
+}
+
 pub(crate) fn maybe_run_internal_scanner() {
     let mut args = std::env::args_os();
     let _exe = args.next();
@@ -29,6 +34,28 @@ pub(crate) fn maybe_run_internal_scanner() {
 
 #[cfg(target_os = "macos")]
 fn run_internal_scanner(args: Vec<OsString>) -> i32 {
+    run_scanner_with_fn(args, |argc, argv| unsafe {
+        tg_scan_keys_macos(argc, argv)
+    })
+}
+
+#[cfg(target_os = "linux")]
+fn run_internal_scanner(args: Vec<OsString>) -> i32 {
+    run_scanner_with_fn(args, |argc, argv| unsafe {
+        tg_scan_keys_linux(argc, argv)
+    })
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+fn run_internal_scanner(_args: Vec<OsString>) -> i32 {
+    eprintln!("tg key extraction is only supported on macOS and Linux");
+    1
+}
+
+fn run_scanner_with_fn(
+    args: Vec<OsString>,
+    f: impl FnOnce(c_int, *const *const c_char) -> c_int,
+) -> i32 {
     use std::os::unix::ffi::OsStrExt;
 
     let mut cstrings = Vec::with_capacity(args.len() + 1);
@@ -45,13 +72,7 @@ fn run_internal_scanner(args: Vec<OsString>) -> i32 {
     }
 
     let argv: Vec<*const c_char> = cstrings.iter().map(|arg| arg.as_ptr()).collect();
-    unsafe { tg_scan_keys_macos(argv.len() as c_int, argv.as_ptr()) }
-}
-
-#[cfg(not(target_os = "macos"))]
-fn run_internal_scanner(_args: Vec<OsString>) -> i32 {
-    eprintln!("tg key extraction is only supported on macOS");
-    1
+    f(argv.len() as c_int, argv.as_ptr())
 }
 
 fn find_telegram_pid() -> Result<i32, String> {
@@ -90,15 +111,7 @@ fn is_root() -> bool {
 }
 
 fn real_home_dir() -> Option<PathBuf> {
-    if is_root() {
-        if let Ok(sudo_user) = std::env::var("SUDO_USER") {
-            if !sudo_user.is_empty() && sudo_user != "root" {
-                return Some(PathBuf::from("/Users").join(sudo_user));
-            }
-        }
-    }
-
-    std::env::var("HOME").ok().map(PathBuf::from)
+    dictionary::real_home_dir()
 }
 
 fn find_db_storage_dir() -> Option<PathBuf> {

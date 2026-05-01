@@ -328,8 +328,8 @@ pub(crate) fn parse_mini_program_info(xml: &str) -> Option<MiniProgramInfo> {
 /// Telegram 3.x: account files with `Message/MessageTemp` subdir
 /// Telegram 4.x: account files with `msg/` subdir
 pub fn find_telegram_base_path() -> Option<PathBuf> {
-    let home = std::env::var("HOME").ok()?;
-    let docs_base = dictionary::documents_account_files_dir(&PathBuf::from(home));
+    let home = dictionary::real_home_dir()?;
+    let docs_base = dictionary::documents_account_files_dir(&home);
     if !docs_base.is_dir() {
         return None;
     }

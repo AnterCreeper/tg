@@ -790,8 +790,7 @@ fn decrypt_database_in_place(
 
 /// Auto-detect Telegram db_storage directory.
 pub(crate) fn auto_detect_db_dir() -> Option<PathBuf> {
-    let home = std::env::var("HOME").ok()?;
-    let home = PathBuf::from(home);
+    let home = dictionary::real_home_dir()?;
 
     let old_path = dictionary::documents_account_files_dir(&home);
     if old_path.exists() {
