@@ -1,0 +1,106 @@
+name: Build
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        
+      - name: Build Release
+        run: cargo build --release
+        
+      - name: Prepare Artifact
+        run: |
+          mkdir -p artifacts
+          cp target/release/tg artifacts/tg-macos
+          chmod +x artifacts/tg-macos
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tg-macos
+          path: artifacts/tg-macos
+          retention-days: 7
+          if-no-files-found: error
+
+  build-debian-bookworm:
+    runs-on: ubuntu-latest
+    container: debian:bookworm
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates curl git libsqlite3-dev build-essential
+            
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          
+      - name: Build Release
+        run: |
+          source $HOME/.cargo/env
+          cargo build --release
+          
+      - name: Prepare Artifact
+        run: |
+          mkdir -p artifacts
+          cp target/release/tg artifacts/tg-debian-bookworm
+          chmod +x artifacts/tg-debian-bookworm
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tg-debian-bookworm
+          path: artifacts/tg-debian-bookworm
+          retention-days: 7
+          if-no-files-found: error
+
+  build-debian-trixie:
+    runs-on: ubuntu-latest
+    container: debian:trixie
+    steps:
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            ca-certificates curl git libsqlite3-dev build-essential
+            
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          
+      - name: Build Release
+        run: |
+          source $HOME/.cargo/env
+          cargo build --release
+          
+      - name: Prepare Artifact
+        run: |
+          mkdir -p artifacts
+          cp target/release/tg artifacts/tg-debian-trixie
+          chmod +x artifacts/tg-debian-trixie
+          
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tg-debian-trixie
+          path: artifacts/tg-debian-trixie
+          retention-days: 7
+          if-no-files-found: error
